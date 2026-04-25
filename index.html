@@ -2,67 +2,180 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>SISTEMA DE DIAGNÓSTICO IA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBER-CORE v12.0 | AI Ultimate</title>
     <style>
-        body { background: #000; color: #00f3ff; font-family: monospace; padding: 20px; }
-        .box { border: 1px solid #ff00ff; padding: 20px; margin-bottom: 20px; background: rgba(255,0,255,0.05); }
-        input { width: 100%; background: #000; border: 1px solid #00f3ff; color: #00f3ff; padding: 10px; margin: 10px 0; }
-        button { background: #ff00ff; border: none; color: #000; padding: 10px 20px; cursor: pointer; font-weight: bold; }
-        #error-output { color: #ff5555; font-weight: bold; margin-top: 20px; border: 1px solid red; padding: 10px; display: none; }
+        :root { --neon: #00f3ff; --pink: #ff00ff; --bg: #050505; }
+        * { box-sizing: border-box; margin: 0; padding: 0; cursor: crosshair; }
+        body { 
+            background: var(--bg); color: var(--neon); 
+            font-family: 'Courier New', monospace; height: 100vh; 
+            display: flex; overflow: hidden;
+            background-image: linear-gradient(rgba(18, 16, 16, 0.1) 50%, transparent 50%);
+            background-size: 100% 4px;
+        }
+        .security-bar { position: absolute; top: 0; width: 100%; background: #000; border-bottom: 2px solid var(--pink); padding: 10px; z-index: 1000; display: flex; gap: 10px; }
+        .security-bar input { background: #000; border: 1px solid var(--pink); color: var(--pink); flex: 1; padding: 5px; outline: none; }
+        .sidebar { width: 250px; border-right: 1px solid var(--neon); padding: 60px 20px; display: flex; flex-direction: column; gap: 20px; font-size: 0.8rem; background: rgba(0,243,255,0.02); }
+        .main { flex: 1; display: flex; flex-direction: column; padding-top: 50px; }
+        #chat-log { flex: 1; overflow-y: auto; padding: 30px; display: flex; flex-direction: column; gap: 20px; }
+        .bubble { max-width: 85%; padding: 15px; border-radius: 2px; font-size: 0.9rem; line-height: 1.4; border: 1px solid var(--neon); }
+        .user-msg { align-self: flex-end; border-color: var(--pink); color: var(--pink); }
+        .ai-msg { align-self: flex-start; }
+        .input-area { padding: 20px; border-top: 1px solid var(--neon); background: #000; }
+        .controls { display: flex; gap: 10px; }
+        input[type="text"] { flex: 1; background: transparent; border: 1px solid var(--neon); padding: 10px; color: var(--neon); outline: none; }
+        .btn { border: 1px solid var(--neon); background: transparent; color: var(--neon); padding: 10px 20px; cursor: pointer; }
+        #preview { height: 50px; border: 1px solid var(--pink); display: none; margin-bottom: 10px; }
+        .typing::after { content: "_"; animation: blink 0.8s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
 
-    <div class="box">
-        <h3>PASO 1: PEGA TU API KEY</h3>
-        <input type="password" id="key" placeholder="AIzaSy...">
+    <div class="security-bar">
+        <span style="color:var(--pink); font-weight:bold;">> KEY:</span>
+        <input type="password" id="apiKeyInput" placeholder="Pega tu API KEY aquí..." onchange="saveKey()">
     </div>
 
-    <div class="box">
-        <h3>PASO 2: PRUEBA DE CONEXIÓN</h3>
-        <button onclick="testIA()">PROBAR CONEXIÓN CON GOOGLE</button>
+    <div class="sidebar">
+        <div style="border:1px solid var(--neon); padding:10px;">
+            <p style="color:var(--pink)">> ESTADO</p>
+            <p id="status-text">ESPERANDO LLAVE...</p>
+        </div>
+        <div style="border:1px solid var(--neon); padding:10px;">
+            <p style="color:var(--pink)">> MODELO_IA</p>
+            <p id="active-model">AUTO-SELECT</p>
+        </div>
+        <p style="font-size: 0.6rem; color: #444; margin-top: auto;">PROYECTO FINAL #12<br>FECHA: 18/04/2026</p>
     </div>
 
-    <div id="log">Esperando prueba...</div>
-    <div id="error-output"></div>
+    <div class="main">
+        <div id="chat-log">
+            <div class="bubble ai-msg">SISTEMA v12.0 LISTO. Pega tu llave arriba y presiona ENTER para activar el núcleo.</div>
+        </div>
+        <div class="input-area">
+            <img id="preview" src="">
+            <div class="controls">
+                <button class="btn" style="color:var(--pink); border-color:var(--pink);" onclick="document.getElementById('fileInput').click()">IMG</button>
+                <input type="file" id="fileInput" hidden accept="image/*">
+                <input type="text" id="userInput" placeholder="Escriba un comando..." onkeypress="if(event.key==='Enter') sendMessage()">
+                <button class="btn" onclick="sendMessage()">EJECUTAR</button>
+            </div>
+        </div>
+    </div>
 
     <script>
-        async function testIA() {
-            const key = document.getElementById('key').value.trim();
-            const log = document.getElementById('log');
-            const errBox = document.getElementById('error-output');
-
-            if(!key) { alert("Pega la llave primero"); return; }
-
-            log.innerText = "Sincronizando con Google...";
-            errBox.style.display = 'none';
-
-            // Probaremos la URL más estándar y estable de Google
-            const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
-
-            try {
-                const response = await fetch(URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: "Hola" }] }] })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    log.innerHTML = "<h2 style='color:#00ff00'>¡ÉXITO! Google respondió:</h2>" + data.candidates[0].content.parts[0].text;
-                } else {
-                    // ESTO ES LO QUE NECESITO VER
-                    errBox.style.display = 'block';
-                    errBox.innerHTML = `<h3>ERROR DETECTADO:</h3>
-                                        <p>Código: ${response.status}</p>
-                                        <p>Mensaje de Google: ${data.error ? data.error.message : 'No hay mensaje'}</p>
-                                        <p>Razón: ${data.error ? data.error.status : 'Desconocida'}</p>`;
-                }
-            } catch (e) {
-                errBox.style.display = 'block';
-                errBox.innerText = "ERROR DE RED: No se pudo llegar a Google. Revisa tu internet.";
+        window.onload = () => {
+            const key = localStorage.getItem('master_key_v12');
+            if (key) {
+                document.getElementById('apiKeyInput').value = key;
+                document.getElementById('status-text').innerText = "NÚCLEO_LISTO";
             }
+        };
+
+        function saveKey() {
+            localStorage.setItem('master_key_v12', document.getElementById('apiKeyInput').value.trim());
+            document.getElementById('status-text').innerText = "NÚCLEO_LISTO";
+            alert("LLAVE SINCRONIZADA.");
+        }
+
+        let base64Img = null;
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    document.getElementById('preview').src = evt.target.result;
+                    document.getElementById('preview').style.display = 'block';
+                    base64Img = evt.target.result.split(',')[1];
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        async function sendMessage() {
+            const key = document.getElementById('apiKeyInput').value.trim();
+            const input = document.getElementById('userInput');
+            const text = input.value.trim();
+            if (!key || (!text && !base64Img)) return;
+
+            appendMsg('user', text || "[ANÁLISIS_VISUAL_SOLICITADO]");
+            input.value = '';
+            const aiMsg = appendMsg('ai', 'PROCESANDO...');
+            aiMsg.classList.add('typing');
+
+            // --- LÓGICA DE AUTO-CORRECCIÓN DE MODELOS ---
+            const configs = [
+                { ver: 'v1beta', mod: 'gemini-1.5-flash-latest' },
+                { ver: 'v1', mod: 'gemini-1.5-flash' },
+                { ver: 'v1beta', mod: 'gemini-pro' }
+            ];
+
+            let success = false;
+
+            for (let config of configs) {
+                if (success) break;
+                
+                document.getElementById('active-model').innerText = config.mod.toUpperCase();
+                const URL = `https://generativelanguage.googleapis.com/${config.ver}/models/${config.mod}:generateContent?key=${key}`;
+
+                try {
+                    const response = await fetch(URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [
+                                    { text: text || "¿Qué hay en esta imagen? Responde en español." },
+                                    ...(base64Img && config.mod.includes('flash') ? [{ inline_data: { mime_type: "image/jpeg", data: base64Img } }] : [])
+                                ]
+                            }]
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.candidates) {
+                        const respuesta = data.candidates[0].content.parts[0].text;
+                        aiMsg.innerText = '';
+                        aiMsg.classList.remove('typing');
+                        efectoEscritura(aiMsg, respuesta);
+                        success = true;
+                    }
+                } catch (err) { console.error("Fallo con: " + config.mod); }
+            }
+
+            if (!success) {
+                aiMsg.classList.remove('typing');
+                aiMsg.innerText = "ERROR CRÍTICO: No se pudo conectar con los modelos de Google. Verifique su API Key en Google AI Studio.";
+            }
+
+            base64Img = null;
+            document.getElementById('preview').style.display = 'none';
+        }
+
+        function appendMsg(role, text) {
+            const log = document.getElementById('chat-log');
+            const div = document.createElement('div');
+            div.className = `bubble ${role}-msg`;
+            div.innerText = text;
+            log.appendChild(div);
+            log.scrollTop = log.scrollHeight;
+            return div;
+        }
+
+        function efectoEscritura(elemento, texto) {
+            let i = 0;
+            function escribir() {
+                if (i < texto.length) {
+                    elemento.innerText += texto.charAt(i);
+                    i++;
+                    setTimeout(escribir, 10);
+                    document.getElementById('chat-log').scrollTop = document.getElementById('chat-log').scrollHeight;
+                }
+            }
+            escribir();
         }
     </script>
 </body>
