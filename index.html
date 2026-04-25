@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CYBER-CORE v12.0 | AI Ultimate</title>
+    <title>CYBER-CORE v13.0 | Núcleo Universal</title>
     <style>
         :root { --neon: #00f3ff; --pink: #ff00ff; --bg: #050505; }
         * { box-sizing: border-box; margin: 0; padding: 0; cursor: crosshair; }
@@ -21,21 +21,17 @@
         #chat-log { flex: 1; overflow-y: auto; padding: 30px; display: flex; flex-direction: column; gap: 20px; }
         .bubble { max-width: 85%; padding: 15px; border-radius: 2px; font-size: 0.9rem; line-height: 1.4; border: 1px solid var(--neon); }
         .user-msg { align-self: flex-end; border-color: var(--pink); color: var(--pink); }
-        .ai-msg { align-self: flex-start; }
         .input-area { padding: 20px; border-top: 1px solid var(--neon); background: #000; }
         .controls { display: flex; gap: 10px; }
         input[type="text"] { flex: 1; background: transparent; border: 1px solid var(--neon); padding: 10px; color: var(--neon); outline: none; }
-        .btn { border: 1px solid var(--neon); background: transparent; color: var(--neon); padding: 10px 20px; cursor: pointer; }
-        #preview { height: 50px; border: 1px solid var(--pink); display: none; margin-bottom: 10px; }
-        .typing::after { content: "_"; animation: blink 0.8s infinite; }
-        @keyframes blink { 50% { opacity: 0; } }
+        .btn { border: 1px solid var(--neon); background: transparent; color: var(--neon); padding: 10px 20px; cursor: pointer; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
     <div class="security-bar">
-        <span style="color:var(--pink); font-weight:bold;">> KEY:</span>
-        <input type="password" id="apiKeyInput" placeholder="Pega tu API KEY aquí..." onchange="saveKey()">
+        <span style="color:var(--pink)">> KEY_SISTEMA:</span>
+        <input type="password" id="apiKeyInput" placeholder="Pega tu llave de Groq (gsk_) o Google (AIza_)..." onchange="saveKey()">
     </div>
 
     <div class="sidebar">
@@ -44,22 +40,18 @@
             <p id="status-text">ESPERANDO LLAVE...</p>
         </div>
         <div style="border:1px solid var(--neon); padding:10px;">
-            <p style="color:var(--pink)">> MODELO_IA</p>
-            <p id="active-model">AUTO-SELECT</p>
+            <p style="color:var(--pink)">> MOTOR_IA</p>
+            <p id="active-engine">DETECTANDO...</p>
         </div>
-        <p style="font-size: 0.6rem; color: #444; margin-top: auto;">PROYECTO FINAL #12<br>FECHA: 18/04/2026</p>
     </div>
 
     <div class="main">
         <div id="chat-log">
-            <div class="bubble ai-msg">SISTEMA v12.0 LISTO. Pega tu llave arriba y presiona ENTER para activar el núcleo.</div>
+            <div class="bubble ai-msg">SISTEMA v13.0 ONLINE. Pega tu llave arriba (Groq o Google) y presiona ENTER para activar.</div>
         </div>
         <div class="input-area">
-            <img id="preview" src="">
             <div class="controls">
-                <button class="btn" style="color:var(--pink); border-color:var(--pink);" onclick="document.getElementById('fileInput').click()">IMG</button>
-                <input type="file" id="fileInput" hidden accept="image/*">
-                <input type="text" id="userInput" placeholder="Escriba un comando..." onkeypress="if(event.key==='Enter') sendMessage()">
+                <input type="text" id="userInput" placeholder="Escribe un comando..." onkeypress="if(event.key==='Enter') sendMessage()">
                 <button class="btn" onclick="sendMessage()">EJECUTAR</button>
             </div>
         </div>
@@ -67,7 +59,7 @@
 
     <script>
         window.onload = () => {
-            const key = localStorage.getItem('master_key_v12');
+            const key = localStorage.getItem('master_key_universal');
             if (key) {
                 document.getElementById('apiKeyInput').value = key;
                 document.getElementById('status-text').innerText = "NÚCLEO_LISTO";
@@ -75,84 +67,65 @@
         };
 
         function saveKey() {
-            localStorage.setItem('master_key_v12', document.getElementById('apiKeyInput').value.trim());
+            localStorage.setItem('master_key_universal', document.getElementById('apiKeyInput').value.trim());
             document.getElementById('status-text').innerText = "NÚCLEO_LISTO";
             alert("LLAVE SINCRONIZADA.");
         }
-
-        let base64Img = null;
-        document.getElementById('fileInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (evt) => {
-                    document.getElementById('preview').src = evt.target.result;
-                    document.getElementById('preview').style.display = 'block';
-                    base64Img = evt.target.result.split(',')[1];
-                };
-                reader.readAsDataURL(file);
-            }
-        });
 
         async function sendMessage() {
             const key = document.getElementById('apiKeyInput').value.trim();
             const input = document.getElementById('userInput');
             const text = input.value.trim();
-            if (!key || (!text && !base64Img)) return;
+            if (!key || !text) return;
 
-            appendMsg('user', text || "[ANÁLISIS_VISUAL_SOLICITADO]");
+            appendMsg('user', text);
             input.value = '';
             const aiMsg = appendMsg('ai', 'PROCESANDO...');
-            aiMsg.classList.add('typing');
 
-            // --- LÓGICA DE AUTO-CORRECCIÓN DE MODELOS ---
-            const configs = [
-                { ver: 'v1beta', mod: 'gemini-1.5-flash-latest' },
-                { ver: 'v1', mod: 'gemini-1.5-flash' },
-                { ver: 'v1beta', mod: 'gemini-pro' }
-            ];
+            // --- DETECTOR DE MOTOR (GROQ O GOOGLE) ---
+            if (key.startsWith('gsk_')) {
+                document.getElementById('active-engine').innerText = "GROQ_LLAMA3";
+                await callGroq(key, text, aiMsg);
+            } else {
+                document.getElementById('active-engine').innerText = "GOOGLE_GEMINI";
+                await callGemini(key, text, aiMsg);
+            }
+        }
 
-            let success = false;
+        // MOTOR GROQ (Súper estable y liberal)
+        async function callGroq(key, text, aiMsg) {
+            try {
+                const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+                    body: JSON.stringify({ model: "llama3-8b-8192", messages: [{ role: "user", content: text }] })
+                });
+                const data = await response.json();
+                aiMsg.innerText = data.choices[0].message.content;
+            } catch (err) {
+                aiMsg.innerText = "ERROR EN GROQ: Verifique su conexión.";
+            }
+        }
 
-            for (let config of configs) {
-                if (success) break;
-                
-                document.getElementById('active-model').innerText = config.mod.toUpperCase();
-                const URL = `https://generativelanguage.googleapis.com/${config.ver}/models/${config.mod}:generateContent?key=${key}`;
-
+        // MOTOR GOOGLE (Con reintentos)
+        async function callGemini(key, text, aiMsg) {
+            const models = ['gemini-1.5-flash', 'gemini-pro'];
+            for (let m of models) {
                 try {
+                    const URL = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${key}`;
                     const response = await fetch(URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{
-                                parts: [
-                                    { text: text || "¿Qué hay en esta imagen? Responde en español." },
-                                    ...(base64Img && config.mod.includes('flash') ? [{ inline_data: { mime_type: "image/jpeg", data: base64Img } }] : [])
-                                ]
-                            }]
-                        })
+                        body: JSON.stringify({ contents: [{ parts: [{ text: text }] }] })
                     });
-
                     const data = await response.json();
-
-                    if (response.ok && data.candidates) {
-                        const respuesta = data.candidates[0].content.parts[0].text;
-                        aiMsg.innerText = '';
-                        aiMsg.classList.remove('typing');
-                        efectoEscritura(aiMsg, respuesta);
-                        success = true;
+                    if (response.ok) {
+                        aiMsg.innerText = data.candidates[0].content.parts[0].text;
+                        return;
                     }
-                } catch (err) { console.error("Fallo con: " + config.mod); }
+                } catch (e) {}
             }
-
-            if (!success) {
-                aiMsg.classList.remove('typing');
-                aiMsg.innerText = "ERROR CRÍTICO: No se pudo conectar con los modelos de Google. Verifique su API Key en Google AI Studio.";
-            }
-
-            base64Img = null;
-            document.getElementById('preview').style.display = 'none';
+            aiMsg.innerText = "ERROR EN GOOGLE: Verifique que su llave no tenga restricciones de país.";
         }
 
         function appendMsg(role, text) {
@@ -163,19 +136,6 @@
             log.appendChild(div);
             log.scrollTop = log.scrollHeight;
             return div;
-        }
-
-        function efectoEscritura(elemento, texto) {
-            let i = 0;
-            function escribir() {
-                if (i < texto.length) {
-                    elemento.innerText += texto.charAt(i);
-                    i++;
-                    setTimeout(escribir, 10);
-                    document.getElementById('chat-log').scrollTop = document.getElementById('chat-log').scrollHeight;
-                }
-            }
-            escribir();
         }
     </script>
 </body>
